@@ -7,7 +7,7 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
     private let environment: Environment
     private let reduceFunction: ReduceFunction<State, Action, Environment>
 
-    init(
+    public init(
         state: State,
         environment: Environment,
         reduceFunction: @escaping ReduceFunction<State, Action, Environment>
