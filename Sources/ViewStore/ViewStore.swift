@@ -2,7 +2,6 @@ import SwiftUI
 
 @dynamicMemberLookup
 public final class ViewStore<State: Sendable, Action: Sendable, Environment>: ObservableObject {
-
     @Published private var state: State
     private let environment: Environment
     private let reduceFunction: ReduceFunction<State, Action, Environment>
@@ -34,6 +33,21 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
                 self.send(action(newValue))
             }
         )
+    }
+
+    public func scope<LocalState, LocalAction>(
+        state toLocalState: @escaping (State) -> LocalState,
+        action fromLocalAction: @escaping (LocalAction) -> Action,
+        scopedReducer: @escaping ReduceFunction<LocalState, LocalAction, Environment>
+    ) -> ViewStore<LocalState, LocalAction, Environment> {
+        let localStore = ViewStore<LocalState, LocalAction, Environment>(
+            state: toLocalState(self.state),
+            environment: self.environment) { localState, localAction, env in
+                await scopedReducer(&localState, localAction, self.environment)
+                await self.send(fromLocalAction(localAction))
+                localState = toLocalState(self.state)
+            }
+        return localStore
     }
 
     @MainActor
