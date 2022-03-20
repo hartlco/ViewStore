@@ -45,7 +45,6 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
             environment: self.environment) { localState, localAction, env in
                 let actionResult = await scopedReducer(&localState, localAction, self.environment)
                 await self.send(fromLocalAction(localAction))
-                localState = toLocalState(self.state)
 
                 return actionResult
             }
@@ -63,6 +62,17 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
             case let .perform(action):
                 send(action)
             }
+        }
+    }
+
+    public func awaitSend(_ action: Action) async {
+        let result = await reduceFunction(&state, action, environment)
+
+        switch result {
+        case .none:
+            return
+        case let .perform(action):
+            await awaitSend(action)
         }
     }
 }
