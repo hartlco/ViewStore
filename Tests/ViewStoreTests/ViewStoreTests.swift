@@ -19,6 +19,25 @@ let testReducer: ReduceFunction<TestState, TestAction, TestEnvironment> = { stat
     return .none
 }
 
+struct ScopedTestState {
+    var testValue = 0
+}
+
+enum ScopedTestAction {
+    case increase
+}
+
+struct ScopedTestEnvironment {}
+
+let scopedtestReducer: ReduceFunction<ScopedTestState, ScopedTestAction, ScopedTestEnvironment> = { state, action, env in
+    switch action {
+    case .increase:
+        state.testValue = state.testValue + 1
+    }
+    return .none
+}
+
+typealias ScopedTestStore = ViewStore<ScopedTestState, ScopedTestAction, ScopedTestEnvironment>
 typealias TestStore = ViewStore<TestState, TestAction, TestEnvironment>
 
 final class ViewStoreTests: XCTestCase {
