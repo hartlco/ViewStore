@@ -12,11 +12,28 @@ enum TestAction {
 struct TestEnvironment {}
 
 let testReducer: ReduceFunction<TestState, TestAction, TestEnvironment> = { state, action, env in
-    switch action {
-    case .increase:
-        state.testValue = state.testValue + 1
+    return AsyncStream { coninuation in
+        switch action {
+        case .increase:
+            coninuation.yield(
+                .change { state in
+                    var state = state
+                    state.testValue = state.testValue + 1
+                    return state
+                }
+            )
+            Task {
+                coninuation.yield(
+                    .change { state in
+                        var state = state
+                        state.testValue = state.testValue + 2
+                        return state
+                    }
+                )
+            }
+        }
+        coninuation.finish()
     }
-    return .none
 }
 
 struct ScopedTestState {
@@ -30,11 +47,14 @@ enum ScopedTestAction {
 struct ScopedTestEnvironment {}
 
 let scopedtestReducer: ReduceFunction<ScopedTestState, ScopedTestAction, ScopedTestEnvironment> = { state, action, env in
-    switch action {
-    case .increase:
-        state.testValue = state.testValue + 1
+    AsyncStream { coninuation in
+        switch action {
+        case .increase:
+            state.testValue = state.testValue + 1
+        }
+        coninuation.yield(ActionResult.change { state in return state } )
+        coninuation.finish()
     }
-    return .none
 }
 
 typealias ScopedTestStore = ViewStore<ScopedTestState, ScopedTestAction, ScopedTestEnvironment>

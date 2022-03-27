@@ -35,6 +35,7 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
         )
     }
 
+    @MainActor
     public func scope<LocalState, LocalAction>(
         state toLocalState: @escaping (State) -> LocalState,
         action fromLocalAction: @escaping (LocalAction) -> Action,
@@ -43,8 +44,8 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
         let localStore = ViewStore<LocalState, LocalAction, Environment>(
             state: toLocalState(self.state),
             environment: self.environment) { localState, localAction, env in
-                let actionResult = await scopedReducer(&localState, localAction, self.environment)
-                await self.send(fromLocalAction(localAction))
+                let actionResult = scopedReducer(localState, localAction, self.environment)
+                self.send(fromLocalAction(localAction))
 
                 return actionResult
             }
@@ -54,25 +55,25 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
     @MainActor
     public func send(_ action: Action) {
         Task {
-            let result = await reduceFunction(&state, action, environment)
-
-            switch result {
-            case .none:
-                return
-            case let .perform(action):
-                send(action)
+            for await result in reduceFunction(state, action, environment) {
+                switch result {
+                case let .change(changeBlock):
+                    self.state = changeBlock(state)
+                case let .perform(action):
+                    send(action)
+                } 
             }
         }
     }
 
     public func awaitSend(_ action: Action) async {
-        let result = await reduceFunction(&state, action, environment)
-
-        switch result {
-        case .none:
-            return
-        case let .perform(action):
-            await awaitSend(action)
+        for await result in reduceFunction(state, action, environment) {
+            switch result {
+            case let .change(changeBlock):
+                self.state = changeBlock(state)
+            case let .perform(action):
+                await awaitSend(action)
+            }
         }
     }
 }
