@@ -1,3 +1,3 @@
 import Foundation
 
-public typealias ReduceFunction<State, Action: Sendable, Environment> = (inout State, Action, Environment) async -> ActionResult<Action>
+public typealias ReduceFunction<State, Action, Environment> = (inout State, Action, Environment) -> ActionResult<Action>
