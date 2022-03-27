@@ -2,7 +2,11 @@ import SwiftUI
 
 @dynamicMemberLookup
 public final class ViewStore<State: Sendable, Action: Sendable, Environment>: ObservableObject {
-    @Published private var state: State
+    @Published private var state: State {
+        didSet {
+            print("Change: \(state)")
+        }
+    }
     private let environment: Environment
     private let reduceFunction: ReduceFunction<State, Action, Environment>
 
@@ -58,7 +62,7 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
             for await result in reduceFunction(state, action, environment) {
                 switch result {
                 case let .change(changeBlock):
-                    self.state = changeBlock(state)
+                    changeBlock(&state)
                 case let .perform(action):
                     send(action)
                 } 
@@ -70,7 +74,7 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
         for await result in reduceFunction(state, action, environment) {
             switch result {
             case let .change(changeBlock):
-                self.state = changeBlock(state)
+                changeBlock(&state)
             case let .perform(action):
                 await awaitSend(action)
             }

@@ -15,22 +15,24 @@ let testReducer: ReduceFunction<TestState, TestAction, TestEnvironment> = { stat
     return AsyncStream { coninuation in
         switch action {
         case .increase:
-            coninuation.yield(
-                .change { state in
-                    var state = state
-                    state.testValue = state.testValue + 1
-                    return state
-                }
-            )
-            Task {
+//            Task {
                 coninuation.yield(
                     .change { state in
-                        var state = state
-                        state.testValue = state.testValue + 2
-                        return state
+//                        var state = state
+                        state.testValue = state.testValue + 1
+//                        return state
                     }
                 )
-            }
+//            }
+//            Task {
+                coninuation.yield(
+                    .change { state in
+//                        var state = state
+                        state.testValue = state.testValue + 2
+//                        return state
+                    }
+                )
+//            }
         }
         coninuation.finish()
     }
@@ -47,13 +49,14 @@ enum ScopedTestAction {
 struct ScopedTestEnvironment {}
 
 let scopedtestReducer: ReduceFunction<ScopedTestState, ScopedTestAction, ScopedTestEnvironment> = { state, action, env in
-    AsyncStream { coninuation in
-        switch action {
-        case .increase:
-            state.testValue = state.testValue + 1
+    return AsyncStream { coninuation in
+        Task {
+            switch action {
+            case .increase:
+                coninuation.yield(ActionResult.change { state in print(state) } )
+            }
+            coninuation.finish()
         }
-        coninuation.yield(ActionResult.change { state in return state } )
-        coninuation.finish()
     }
 }
 
