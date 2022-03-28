@@ -16,4 +16,8 @@ public struct ActionHandler<Action, State> {
     public func handle(_ actionResult: ActionResult<Action, State>) {
         continuation.yield(actionResult)
     }
+    
+    public func finish() {
+        continuation.finish()
+    }
 }
