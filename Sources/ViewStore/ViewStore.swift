@@ -59,7 +59,6 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
         let asyncStream = AsyncStream<ActionResult<Action, State>> { continuation in
             let handler = ActionHandler(continuation: continuation)
             reduceFunction(state, action, environment, handler)
-            continuation.finish()
         }
         
         Task {
