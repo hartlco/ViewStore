@@ -47,19 +47,23 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
     ) -> ViewStore<LocalState, LocalAction, Environment> {
         let localStore = ViewStore<LocalState, LocalAction, Environment>(
             state: toLocalState(self.state),
-            environment: self.environment) { localState, localAction, env in
-                let actionResult = scopedReducer(localState, localAction, self.environment)
+            environment: self.environment) { localState, localAction, env, continuation in
+                scopedReducer(localState, localAction, self.environment, continuation)
                 self.send(fromLocalAction(localAction))
-
-                return actionResult
             }
         return localStore
     }
 
     @MainActor
     public func send(_ action: Action) {
+        let asyncStream = AsyncStream<ActionResult<Action, State>> { continuation in
+            let handler = ActionHandler(continuation: continuation)
+            reduceFunction(state, action, environment, handler)
+            continuation.finish()
+        }
+        
         Task {
-            for await result in reduceFunction(state, action, environment) {
+            for await result in asyncStream {
                 switch result {
                 case let .change(changeBlock):
                     changeBlock(&state)
@@ -71,7 +75,13 @@ public final class ViewStore<State: Sendable, Action: Sendable, Environment>: Ob
     }
 
     public func awaitSend(_ action: Action) async {
-        for await result in reduceFunction(state, action, environment) {
+        let asyncStream = AsyncStream<ActionResult<Action, State>> { continuation in
+            let handler = ActionHandler(continuation: continuation)
+            reduceFunction(state, action, environment, handler)
+            continuation.finish()
+        }
+        
+        for await result in asyncStream {
             switch result {
             case let .change(changeBlock):
                 changeBlock(&state)
