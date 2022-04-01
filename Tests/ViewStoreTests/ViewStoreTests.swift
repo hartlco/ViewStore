@@ -20,7 +20,6 @@ let testReducer: ReduceFunction<TestState, TestAction, TestEnvironment> = { stat
 //            Task {
         cont.handle(.change { state in state.testValue = state.testValue + 2 })
 //            }
-        cont.finish()
     }
 }
 
@@ -40,7 +39,6 @@ let scopedtestReducer: ReduceFunction<ScopedTestState, ScopedTestAction, ScopedT
         case .increase:
             handler.handle(.change { state in print(state) })
         }
-        handler.finish()
     }
 }
 
